@@ -36,4 +36,4 @@ WantedBy=multi-user.target
 EOF
 
 sudo systemctl daemon-reload
-sudo systemctl enable yandex-bot 
+sudo systemctl enable rnpYandexDirect-bot 
