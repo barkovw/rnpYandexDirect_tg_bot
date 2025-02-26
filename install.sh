@@ -2,6 +2,12 @@
 
 echo "🤖 Установка бота..."
 
+# Проверка наличия Python
+if ! command -v python3 &> /dev/null; then
+    echo "Установка Python..."
+    sudo apt install -y python3 python3-pip
+fi
+
 # Установка зависимостей
 python3 -m pip install -r requirements.txt
 
