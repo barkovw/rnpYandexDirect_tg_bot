@@ -19,9 +19,9 @@ echo "После настройки запустите: python3 main.py"
 
 # Создание systemd сервиса для автозапуска
 echo "Создание сервиса автозапуска..."
-sudo tee /etc/systemd/system/yandex-bot.service << EOF
+sudo tee /etc/systemd/system/rnpYandexDirect-bot.service << EOF
 [Unit]
-Description=Yandex Direct Bot
+Description=RNP Yandex Direct Bot
 After=network.target
 
 [Service]
