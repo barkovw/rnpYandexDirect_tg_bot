@@ -55,15 +55,15 @@ python main.py
 
 Проверяем статус сервиса:
 ```bash
-sudo systemctl status rnpyandexdirect-bot
+sudo systemctl status rnpYandexDirect-bot.service 
 ```
 Если сервис не запущен, то запускаем:
 ```bash
-sudo systemctl start rnpyandexdirect-bot
+sudo systemctl start rnpYandexDirect-bot.service 
 ```
 Если сервис запущен, то перезапускаем:
 ```bash
-sudo systemctl restart rnpyandexdirect-bot
+sudo systemctl restart rnpYandexDirect-bot.service 
 ```
 
 
