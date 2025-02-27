@@ -16,12 +16,17 @@ from modules.yandex_direct.pandas_stat_proccessor import proccess_data
 class YandexDirectReportBuilder(BaseReportBuilder):
     def __init__(self):
         super().__init__()
+        self.semaphore = asyncio.Semaphore(5)  # Ограничиваем до 5 одновременных запросов
+
+    async def _make_api_request(self, api_func, *args, **kwargs):
+        async with self.semaphore:
+            return await api_func(*args, **kwargs)
 
     async def fetch_budgets(self, accounts: List[Account]) -> str:
         tasks = []
         for account in accounts:
             api = YandexDirectAPI(account.auth.login, account.auth.token)
-            tasks.append(api.get_budgets(INCLUDE_VAT))
+            tasks.append(self._make_api_request(api.get_budgets, INCLUDE_VAT))
             
         budgets = await asyncio.gather(*tasks, return_exceptions=True)
         print(budgets)
@@ -45,10 +50,10 @@ class YandexDirectReportBuilder(BaseReportBuilder):
                 "report_type": REPORT_TYPE,
                 "include_vat": INCLUDE_VAT,
             }
-            statistics_tasks.append(api.get_statistics(**params))
+            statistics_tasks.append(self._make_api_request(api.get_statistics, **params))
             
             # Задачи для бюджетов
-            budget_tasks.append(api.get_budgets(INCLUDE_VAT))
+            budget_tasks.append(self._make_api_request(api.get_budgets, INCLUDE_VAT))
 
         # Выполняем все задачи параллельно
         statistics_results = await asyncio.gather(*statistics_tasks, return_exceptions=True)
@@ -75,11 +80,8 @@ class YandexDirectReportBuilder(BaseReportBuilder):
             # Подготавливаем все задачи для параллельного выполнения
             tasks = []
             
-            # Задача для получения бюджета
-            budget_task = api.get_budgets(INCLUDE_VAT)
-            tasks.append(budget_task)
-            
-            # Задача для получения общей статистики
+            # Задача для получения бюджета и общей статистики
+            budget_params = {"include_vat": INCLUDE_VAT}
             summary_params = {
                 "date_from": date_from,
                 "date_to": date_to,
@@ -89,12 +91,13 @@ class YandexDirectReportBuilder(BaseReportBuilder):
                 "report_type": REPORT_TYPE,
                 "include_vat": INCLUDE_VAT,
             }
-            summary_task = api.get_statistics(**summary_params)
-            tasks.append(summary_task)
-            
-            # Выполняем задачи для бюджета и общей статистики
+
             logger.info("Запуск запросов к API для бюджета и общей статистики")
-            budget_data, summary_stats = await asyncio.gather(budget_task, summary_task, return_exceptions=True)
+            budget_data, summary_stats = await asyncio.gather(
+                self._make_api_request(api.get_budgets, **budget_params),
+                self._make_api_request(api.get_statistics, **summary_params),
+                return_exceptions=True
+            )
             
             # Обрабатываем результат получения бюджета
             balance = "Не доступно"
@@ -157,7 +160,7 @@ class YandexDirectReportBuilder(BaseReportBuilder):
                     "report_type": REPORT_TYPE,
                     "include_vat": INCLUDE_VAT,
                 }
-                dimension_tasks.append((dimension, api.get_statistics(**params)))
+                dimension_tasks.append((dimension, self._make_api_request(api.get_statistics, **params)))
             
             # Выполняем все задачи для измерений параллельно
             dimension_results = []
