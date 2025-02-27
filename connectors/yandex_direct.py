@@ -48,7 +48,7 @@ class YandexDirectAPI:
                 "\nОшибка! \nОтвет сервера: \n" + str(data)
             )
         if include_vat:
-            budget_value *= 1.2
+            budget_value = round(budget_value * 1.2, 2)
         return YandexDirectBudget(budget=budget_value)
 
     async def get_statistics(
