@@ -1,7 +1,7 @@
 from typing import List
 
 ATTRIBUTION_MODEL: List[str] = "AUTO"
-INCLUDE_VAT: bool = False
+INCLUDE_VAT: bool = True
 REPORT_TYPE: str = "CUSTOM_REPORT"
 FILTERS: List[str] = []
 
