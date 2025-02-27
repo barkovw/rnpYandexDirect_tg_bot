@@ -37,15 +37,16 @@ async def setup_test_db(db_path: str = "test_accounts.db"):
     print(f"GOALS: {os.getenv('YANDEX_DIRECT_GOAL_IDS')}")
     print("==========================")
 
-    test_accounts = [
-        {   "account_name": "quantumclinic",
+    test_accounts = []
+    for i in range(1, 11):  # Создаем 10 аккаунтов
+        test_accounts.append({
+            "account_name": f"Тестовый аккаунт {i}",
             "auth": {
                 "login": os.getenv("YANDEX_DIRECT_LOGIN"),
                 "token": os.getenv("YANDEX_DIRECT_TOKEN"),
                 "goals": [int(goal) for goal in os.getenv("YANDEX_DIRECT_GOAL_IDS", "").split(",") if goal],
             }
-        }
-    ]
+        })
 
     for account in test_accounts:
         await add_account("YANDEX_DIRECT", account["auth"], account["account_name"], db_path=db_path)
@@ -218,8 +219,8 @@ async def test_error_handling():
 async def run_all_tests():
     print("Запуск всех тестов...")
     #await test_get_budgets_report()
-    #await test_get_summary_report()
-    await test_get_detailed_report()
+    await test_get_summary_report()
+    #await test_get_detailed_report()
     # await test_empty_db()
     # await test_invalid_source()
     # await test_account_preparation()
