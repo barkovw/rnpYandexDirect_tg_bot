@@ -32,7 +32,7 @@
 
 1. Команды для установки:
 ```bash
-git clone https://github.com/poschitai/rnpYandexDirect-bot.git
+git clone https://github.com/tonyloks/rnpYandexDirect_tg_bot
 cd rnpYandexDirect-bot
 sh install.sh
 ```
