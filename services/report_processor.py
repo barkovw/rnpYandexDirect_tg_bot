@@ -5,7 +5,7 @@ from database.db import get_all_accounts, get_account_by_id
 from modules.report_builder_factory import ReportBuilderFactory
 from modules.base_report_builder import BaseReportBuilder
 from models.account import Account
-from settings.report_settings import get_date_from, get_date_to
+from settings.report_settings import get_date_from, get_date_to, get_yesterday_date
 
 class ReportProcessor:
     def __init__(self, source: Source, db_path: str = "accounts.db"):
@@ -22,7 +22,7 @@ class ReportProcessor:
         """Обновляет даты из настроек"""
         self.date_from = get_date_from()
         self.date_to = get_date_to()
-        print(self.date_from, self.date_to)
+        self.yesterday_date = get_yesterday_date()
 
     async def _get_filtered_accounts(self) -> List[Account]:
         raw_accounts = await get_all_accounts(self.db_path)
@@ -41,13 +41,27 @@ class ReportProcessor:
     async def get_budgets_report(self) -> str:
         return await self._process_report(self.builder.fetch_budgets)
 
-    async def get_summary_report(self) -> str:
+    async def get_today_summary_report(self) -> str:
         self._update_dates()
         return await self._process_report(
             self.builder.fetch_summary_statistics, 
             self.date_to, 
             self.date_to
         )
+    
+    async def get_yesterday_summary_report(self) -> str:
+        self._update_dates()
+        return await self._process_report(
+            self.builder.fetch_summary_statistics, 
+            self.yesterday_date, 
+            self.yesterday_date
+        )
+
+    async def get_summary_report(self) -> str:
+        """
+        Обобщенный метод для получения сводного отчета за сегодня (для обратной совместимости)
+        """
+        return await self.get_today_summary_report()
 
     async def get_detailed_report(self, account_id: int) -> List[str]:
         """

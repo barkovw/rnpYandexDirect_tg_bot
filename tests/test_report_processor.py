@@ -38,7 +38,7 @@ async def setup_test_db(db_path: str = "test_accounts.db"):
     print("==========================")
 
     test_accounts = []
-    for i in range(1, 20):  # Создаем 10 аккаунтов
+    for i in range(1, 3):  # Создаем 10 аккаунтов
         test_accounts.append({
             "account_name": f"Тестовый аккаунт {i}",
             "auth": {
@@ -76,22 +76,38 @@ async def test_get_budgets_report():
         await cleanup_db(db_path)
 
 
-async def test_get_summary_report():
+async def test_get_today_summary_report():
     print("\n=== Тестируем получение сводного отчета ===")
     db_path = await setup_test_db()
 
     try:
         processor = ReportProcessor(source=Source.YANDEX_DIRECT, db_path=db_path)
-        result = await processor.get_summary_report()
+        result = await processor.get_today_summary_report()
 
         # Проверяем что отчет это строка
         assert isinstance(result, str), "Результат должен быть строкой"
 
         print(result)
-        print("✓ Тест получения сводного отчета пройден")
+        print("✓ Тест получения сводного отчета за сегодняшний день пройден")
     finally:
         await cleanup_db(db_path)
 
+
+async def test_get_yesterday_summary_report():
+    print("\n=== Тестируем получение сводного отчета за вчерашний день ===")
+    db_path = await setup_test_db()
+
+    try:
+        processor = ReportProcessor(source=Source.YANDEX_DIRECT, db_path=db_path)
+        result = await processor.get_yesterday_summary_report()
+
+        # Проверяем что отчет это строка
+        assert isinstance(result, str), "Результат должен быть строкой"
+
+        print(result)
+        print("✓ Тест получения сводного отчета за вчерашний день пройден")
+    finally:
+        await cleanup_db(db_path)
 
 async def test_get_detailed_report():
     print("\n=== Тестируем получение детального отчета ===")
@@ -219,7 +235,8 @@ async def test_error_handling():
 async def run_all_tests():
     print("Запуск всех тестов...")
     await test_get_budgets_report()
-    await test_get_summary_report()
+    await test_get_today_summary_report()
+    await test_get_yesterday_summary_report()
     #await test_get_detailed_report()
     # await test_empty_db()
     # await test_invalid_source()

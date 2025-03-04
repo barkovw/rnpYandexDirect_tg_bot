@@ -19,32 +19,55 @@ def main_menu_keyboard() -> InlineKeyboardMarkup:
     return builder.as_markup()
 
 
-def source_selection_keyboard(report_type: str) -> InlineKeyboardMarkup:
+def source_selection_keyboard(report_type: str, period: str = None) -> InlineKeyboardMarkup:
     """
-    report_type: "budgets", "summary" или "detailed"
-    Формирует клавиатуру для выбора источника.
+    Создает клавиатуру для выбора источника отчета
+    
+    :param report_type: Тип отчета (budgets, summary, etc.)
+    :param period: Период для отчета (today, yesterday), если применимо
+    :return: Клавиатура с кнопками источников
     """
-    builder = InlineKeyboardBuilder()
+    sources = [
+        (Source.YANDEX_DIRECT.value, "Яндекс.Директ"),
+    ]
+    
+    buttons = []
+    for source_key, source_name in sources:
+        callback_data = f"source_{report_type}_{source_key}"
+        if period:
+            callback_data = f"source_{report_type}_{period}_{source_key}"
+        buttons.append([InlineKeyboardButton(text=source_name, callback_data=callback_data)])
+    
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    builder.button(
-        text=Source.YANDEX_DIRECT.value, callback_data=f"source_{report_type}_YANDEX_DIRECT"
-    )
-    # Здесь можно добавить другие источники
 
-    builder.adjust(1)
-    return builder.as_markup()
-
-
-def sources_keyboard() -> InlineKeyboardMarkup:
+def account_source_selection_keyboard() -> InlineKeyboardMarkup:
     """
-    Создает клавиатуру из доступных источников в enum Sources
+    Создает клавиатуру для выбора источника при добавлении аккаунта
     """
-    builder = InlineKeyboardBuilder()
+    sources = [
+        (Source.YANDEX_DIRECT.value, "Яндекс.Директ"),
+    ]
+    
+    buttons = []
+    for source_key, source_name in sources:
+        callback_data = f"select_source_{source_key}"
+        buttons.append([InlineKeyboardButton(text=source_name, callback_data=callback_data)])
+    
+    buttons.append([InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")])
+    return InlineKeyboardMarkup(inline_keyboard=buttons)
 
-    for source in Source:
-        # Создаем человекочитаемое название
-        display_name = source.value
-        builder.button(text=display_name, callback_data=f"select_source_{source.value}")
 
-    builder.adjust(1)  # Один столбец
-    return builder.as_markup()
+def period_selection_keyboard() -> InlineKeyboardMarkup:
+    """
+    Создает клавиатуру для выбора периода отчета (сегодня/вчера)
+    """
+    buttons = [
+        [
+            InlineKeyboardButton(text="За сегодня", callback_data="period_today"),
+            InlineKeyboardButton(text="За вчера", callback_data="period_yesterday")
+        ],
+        [InlineKeyboardButton(text="🔙 Назад", callback_data="back_to_menu")]
+    ]
+    return InlineKeyboardMarkup(inline_keyboard=buttons)

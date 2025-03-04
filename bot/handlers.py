@@ -10,7 +10,7 @@ from aiogram.exceptions import TelegramBadRequest
 from database.db import add_account, delete_account, get_all_accounts, get_account_by_id
 from enums.sources import Source
 from services.report_processor import ReportProcessor
-from bot.keyboards import main_menu_keyboard, source_selection_keyboard, sources_keyboard
+from bot.keyboards import main_menu_keyboard, source_selection_keyboard, source_selection_keyboard, period_selection_keyboard, account_source_selection_keyboard
 
 # Создаем роутер для регистрации хендлеров
 router = Router()
@@ -24,7 +24,8 @@ async def set_commands(bot: Bot):
 
 # Состояния для добавления одного аккаунта
 class AddAccountStates(StatesGroup):
-    waiting_for_name = State()  # Сначала название аккаунта
+    waiting_for_source = State()  # Сначала выбор источника
+    waiting_for_name = State()    # Потом название аккаунта
     waiting_for_credentials = State()  # Потом логин;токен;цели
 
 
@@ -52,17 +53,18 @@ async def menu_command(message: Message):
 # --- Добавление аккаунта ---
 @router.callback_query(F.data == "add_account")
 async def add_account_start(callback: CallbackQuery, state: FSMContext):
-    await callback.message.answer("Выберите источник:", reply_markup=sources_keyboard())
-    await state.set_state(AddAccountStates.waiting_for_name)
+    await callback.message.answer("Выберите источник:", reply_markup=account_source_selection_keyboard())
+    await state.set_state(AddAccountStates.waiting_for_source)
     await callback.answer()
 
 
-@router.callback_query(F.data.startswith("select_source_"))
+@router.callback_query(AddAccountStates.waiting_for_source, F.data.startswith("select_source_"))
 async def process_source_selection(callback: CallbackQuery, state: FSMContext):
     # Получаем полное значение источника
     source = callback.data.replace("select_source_", "")
     await state.update_data(source=source.upper())  # Сохраняем в верхнем регистре
     await callback.message.answer("Введите название аккаунта (для удобства идентификации):")
+    await state.set_state(AddAccountStates.waiting_for_name)
     await callback.answer()
 
 
@@ -242,38 +244,57 @@ async def get_budgets_source(callback: CallbackQuery):
 @router.callback_query(F.data == "get_summary_report")
 async def get_summary_report(callback: CallbackQuery):
     await callback.message.answer(
-        "Выберите источник для получения сводной статистики:",
-        reply_markup=source_selection_keyboard(report_type="summary"),
+        "Выберите период для получения сводной статистики:",
+        reply_markup=period_selection_keyboard(),
+    )
+    await callback.answer()
+
+
+@router.callback_query(F.data.startswith("period_"))
+async def process_period_selection(callback: CallbackQuery, state: FSMContext):
+    period = callback.data.replace("period_", "")
+    
+    # Сохраняем выбранный период в состоянии
+    await state.update_data(selected_period=period)
+    
+    await callback.message.answer(
+        f"Выберите источник для получения сводной статистики за {'сегодня' if period == 'today' else 'вчера'}:",
+        reply_markup=source_selection_keyboard(report_type="summary", period=period),
     )
     await callback.answer()
 
 
 @router.callback_query(F.data.startswith("source_summary_"))
-async def get_summary_report_source(callback: CallbackQuery):
-    source = callback.data.replace("source_summary_", "")
+async def get_summary_report_source(callback: CallbackQuery, state: FSMContext):
+    callback_data = callback.data.replace("source_summary_", "")
+    
+    # Проверяем, содержит ли callback данные о периоде
+    if "_" in callback_data:
+        period, source = callback_data.split("_", 1)
+    else:
+        # Обратная совместимость со старым форматом
+        source = callback_data
+        # Получаем период из состояния
+        user_data = await state.get_data()
+        period = user_data.get("selected_period", "today")  # По умолчанию - сегодня
     
     # Отправляем промежуточное сообщение
     progress_message = await callback.message.answer("⏳ *Готовлю сводный отчет...*", parse_mode="Markdown")
     await callback.answer()
     
     try:
-        # Получаем отчет
+        # Получаем отчет с учетом выбранного периода
         processor = ReportProcessor(source=Source(source), db_path="accounts.db")
-        report = await processor.get_summary_report()
-
+        
+        if period == "today":
+            report = await processor.get_today_summary_report()
+        else:  # period == "yesterday"
+            report = await processor.get_yesterday_summary_report()
+        
         # Удаляем промежуточное сообщение
         await progress_message.delete()
-
-        # Отправляем отчет
-        if len(report) > 4096:
-            for x in range(0, len(report), 4096):
-                chunk = report[x:x + 4096]
-                await callback.message.answer(chunk, parse_mode="Markdown")
-        else:
-            await callback.message.answer(report, parse_mode="Markdown")
-            
-        # Возвращаем в главное меню
-        await callback.message.answer("Выберите действие:", reply_markup=main_menu_keyboard())
+        
+        await callback.message.answer(report, parse_mode="Markdown")
     except Exception as e:
         error_text = str(e).replace("_", "\\_").replace("*", "\\*").replace("`", "\\`").replace("[", "\\[").replace("]", "\\]")
         await progress_message.edit_text(f"❌ *Ошибка при подготовке отчета:*\n{error_text}", parse_mode="Markdown")

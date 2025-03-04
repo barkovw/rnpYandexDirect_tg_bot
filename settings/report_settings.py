@@ -14,3 +14,7 @@ def get_date_to() -> str:
 def get_default_date_range() -> tuple[str, str]:
     """Возвращает кортеж из двух дат (от, до) по московскому времени"""
     return get_date_from(), get_date_to()
+
+def get_yesterday_date() -> str:
+    """Возвращает вчерашнюю дату по московскому времени"""
+    return (datetime.now(MOSCOW_TZ) - timedelta(days=1)).strftime("%Y-%m-%d")
