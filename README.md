@@ -85,6 +85,7 @@ login;token;11111111,11111111,11111111
 
 Вы можете обновить бота, используя команды:
 ```bash
+cd rnpYandexDirect_tg_bot
 git pull
 sudo systemctl restart rnpYandexDirect-bot.service 
 ```
