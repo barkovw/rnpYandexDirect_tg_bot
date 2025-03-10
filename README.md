@@ -47,7 +47,7 @@ BOT_TOKEN=1234567890:ABCDEFGHIJKLMNOPQRSTUVWXYZ
 
 3. Запускаем через пайтон
 ```bash
-python main.py
+python3 main.py
 ```
 Если отображется логика работы и бот откликается - то установка прошла успешно.
 
