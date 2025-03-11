@@ -17,7 +17,7 @@ class YandexDirectAPI:
             "method": "AccountManagement",
             "token": self._token,
             "locale": "ru",
-            "param": {"Action": "Get", "SelectionCriteria": {"Logins": [self._login]}},
+            "param": {"Action": "Get"},
         }
         headers = {"Content-Type": "application/json"}
 

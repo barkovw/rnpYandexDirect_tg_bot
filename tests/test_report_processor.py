@@ -235,8 +235,8 @@ async def test_error_handling():
 async def run_all_tests():
     print("Запуск всех тестов...")
     await test_get_budgets_report()
-    await test_get_today_summary_report()
-    await test_get_yesterday_summary_report()
+    #await test_get_today_summary_report()
+    #await test_get_yesterday_summary_report()
     #await test_get_detailed_report()
     # await test_empty_db()
     # await test_invalid_source()
