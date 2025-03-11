@@ -25,21 +25,22 @@ class YandexDirectAPI:
             async with session.post(url, json=payload, headers=headers) as response:
                 if response.status != 200:
                     error_text = await response.text()
+                    
+                    
                     raise Exception(
                         f"Ошибка при получении бюджетов. Статус: {response.status}. Ответ сервера: {error_text}"
                     )
                 data = await response.json()
-
-            # Если API требует указания SelectionCriteria – добавляем его и повторяем запрос
-            if data.get("error_detail") == "Поле SelectionCriteria должно быть указано":
-                payload["param"]["SelectionCriteria"] = {"Logins": [self._login]}
-                async with session.post(url, json=payload, headers=headers) as response:
-                    if response.status != 200:
-                        error_text = await response.text()
-                        raise Exception(
-                            f"Ошибка при получении бюджетов. Статус: {response.status}. Ответ сервера: {error_text}"
-                        )
-                    data = await response.json()
+                # Если API требует указания SelectionCriteria – добавляем его и повторяем запрос
+                if data.get("error_detail") == "Поле SelectionCriteria должно быть указано" or (data.get("data", {}).get("Accounts", [{}])[0].get("Login") != self._login):
+                    payload["param"]["SelectionCriteria"] = {"Logins": [self._login]}
+                    async with session.post(url, json=payload, headers=headers) as response:
+                        if response.status != 200:
+                            error_text = await response.text()
+                            raise Exception(
+                                f"Ошибка при получении бюджетов. Статус: {response.status}. Ответ сервера: {error_text}"
+                            )
+                        data = await response.json()
 
         try:
             budget_value = float(data["data"]["Accounts"][0]["Amount"])
