@@ -16,9 +16,33 @@ from modules.yandex_direct.pandas_stat_proccessor import proccess_data
 class YandexDirectReportBuilder(BaseReportBuilder):
     def __init__(self):
         super().__init__()
-        self.semaphore = asyncio.Semaphore(5)  # Ограничиваем до 5 одновременных запросов
+        # Семафор для ограничения одновременных запросов
+        self.semaphore = asyncio.Semaphore(5)
+        # Для контроля частоты запросов (20 запросов в течение 10 секунд)
+        self.request_timestamps = []
+        self.max_requests = 20
+        self.window_seconds = 10
 
     async def _make_api_request(self, api_func, *args, **kwargs):
+        # Контроль частоты запросов
+        now = asyncio.get_event_loop().time()
+        
+        # Удаляем timestamp'ы старше окна в 10 секунд
+        self.request_timestamps = [ts for ts in self.request_timestamps if now - ts < self.window_seconds]
+        
+        # Если достигли лимита запросов в окне, нужно подождать
+        if len(self.request_timestamps) >= self.max_requests:
+            # Вычисляем, сколько нужно подождать
+            oldest_timestamp = min(self.request_timestamps)
+            wait_time = self.window_seconds - (now - oldest_timestamp)
+            if wait_time > 0:
+                print(f"Достигнут лимит запросов, ожидание {wait_time:.2f} секунд...")
+                await asyncio.sleep(wait_time)
+        
+        # Добавляем текущий запрос в историю
+        self.request_timestamps.append(asyncio.get_event_loop().time())
+        
+        # Выполняем запрос через семафор как обычно
         async with self.semaphore:
             return await api_func(*args, **kwargs)
 

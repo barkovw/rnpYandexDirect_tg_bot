@@ -290,11 +290,25 @@ async def get_summary_report_source(callback: CallbackQuery, state: FSMContext):
             report = await processor.get_today_summary_report()
         else:  # period == "yesterday"
             report = await processor.get_yesterday_summary_report()
+
+        print(len(report))
+        report_parts = report.split("•")
         
+        # Remove empty first element if it exists
+        if report_parts and not report_parts[0].strip():
+            report_parts = report_parts[1:]
+        
+        # Group account entries and add bullet point back
+        for i in range(0, len(report_parts), 10):
+            chunk = report_parts[i:i+10]
+            # Add bullet point back to each part except the first in each message
+            formatted_chunk = "• " + "•".join(chunk)
+            await callback.message.answer(formatted_chunk, parse_mode="Markdown")
+
         # Удаляем промежуточное сообщение
         await progress_message.delete()
         
-        await callback.message.answer(report, parse_mode="Markdown")
+        #await callback.message.answer(report, parse_mode="Markdown")
     except Exception as e:
         error_text = str(e).replace("_", "\\_").replace("*", "\\*").replace("`", "\\`").replace("[", "\\[").replace("]", "\\]")
         await progress_message.edit_text(f"❌ *Ошибка при подготовке отчета:*\n{error_text}", parse_mode="Markdown")
